@@ -2,6 +2,7 @@ package cs455.hadoop.getInput;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
@@ -20,6 +21,7 @@ public class GetInputJob {
             // Mapper
             job.setMapperClass(GetInputMapper.class);
             // Combiner. We use the reducer as the combiner in this case.
+            // TODO: COMMENTED OUT COMBINER FOR THIS JOB BECAUSE IT DOESN'T REALLY MAKE SENSE?
             job.setCombinerClass(GetInputReducer.class);
             // Reducer
             job.setReducerClass(GetInputReducer.class);
@@ -36,7 +38,66 @@ public class GetInputJob {
             // path to output in HDFS
             FileOutputFormat.setOutputPath(job, new Path(args[1]));
             // Block until the job is completed.
-            System.exit(job.waitForCompletion(true) ? 0 : 1);
+            if (job.waitForCompletion(true)) {
+                Job delayJob = Job.getInstance(conf, "Best/worst time to fly to minimize/maximize delays");
+                delayJob.setJarByClass(GetInputJob.class);
+
+                delayJob.setMapperClass(DelayMapper.class);
+
+                delayJob.setNumReduceTasks(1);
+                delayJob.setReducerClass(DelayReducer.class);
+
+                // Sets Mapper and Reducer output key and value to Text
+                delayJob.setOutputKeyClass(Text.class);
+                delayJob.setOutputValueClass(Text.class);
+
+                FileInputFormat.addInputPath(delayJob, new Path(args[2]));
+                FileOutputFormat.setOutputPath(delayJob, new Path(args[3]));
+
+				if (delayJob.waitForCompletion(true)) {
+					Job busiestAirportsJob = Job.getInstance(conf, "Top 10 Busiest Airports");
+					busiestAirportsJob.setJarByClass(GetInputJob.class);
+
+					busiestAirportsJob.setMapperClass(SortBusiestAirportsMapper.class);
+
+					// Have only 1 Reducer so we can get global top 10 busiest airports
+					// instead of top 10 busiest airports for each Reducer
+					busiestAirportsJob.setNumReduceTasks(1);
+					busiestAirportsJob.setReducerClass(TopTenBusiestAirportsReducer.class);
+
+					// Sort output in descending order so Reducer gets inputs from largest to smallest
+					busiestAirportsJob.setSortComparatorClass(LongWritable.DecreasingComparator.class);
+
+					// Mapper outputs
+					busiestAirportsJob.setMapOutputKeyClass(LongWritable.class);
+					busiestAirportsJob.setMapOutputValueClass(Text.class);
+
+					// Reducer outputs
+					busiestAirportsJob.setOutputKeyClass(Text.class);
+					busiestAirportsJob.setOutputValueClass(LongWritable.class);
+
+					FileInputFormat.addInputPath(busiestAirportsJob, new Path(args[4]));
+					FileOutputFormat.setOutputPath(busiestAirportsJob, new Path(args[5]));
+
+					if (busiestAirportsJob.waitForCompletion(true)) {
+						Job carrierDelayJob = Job.getInstance(conf, "Carrier Delays");
+						carrierDelayJob.setJarByClass(GetInputJob.class);
+
+						carrierDelayJob.setMapperClass(CarrierDelayMapper.class);
+
+						carrierDelayJob.setNumReduceTasks(1);
+						carrierDelayJob.setReducerClass(CarrierDelayReducer.class);
+
+						carrierDelayJob.setOutputKeyClass(Text.class);
+						carrierDelayJob.setOutputValueClass(Text.class);
+
+						FileInputFormat.addInputPath(carrierDelayJob, new Path(args[6]));
+						FileOutputFormat.setOutputPath(carrierDelayJob, new Path(args[7]));
+
+						System.exit(carrierDelayJob.waitForCompletion(true) ? 0 : 1);
+					}
+				}
+            }
         } catch (IOException e) {
             System.err.println(e.getMessage());
         } catch (InterruptedException e) {

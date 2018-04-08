@@ -35,7 +35,7 @@ public class DelayReducer extends Reducer<Text, Text, Text, Text> {
         }
 
         // avg delay
-        totalDelay /= numDelays;
+		totalDelay /= numDelays;
 
 		// insert the month, day, hour into their respective maps
 		String monthDayHour = key.toString();
@@ -48,31 +48,12 @@ public class DelayReducer extends Reducer<Text, Text, Text, Text> {
 		}
 
         System.out.println("inside reduce");
-        //context.write(key, new Text(String.valueOf(totalDelay)));
+        context.write(key, new Text(String.valueOf(totalDelay)));
     }
 
+	/*
     @Override
 	protected void cleanup(Context context) throws IOException, InterruptedException {
-		/*
-		TreeMap<Double, String> monthDelays = new TreeMap<>();
-		TreeMap<Double, String> dayDelays = new TreeMap<>();
-		TreeMap<Double, String> hourDelays = new TreeMap<>();
-
-		System.out.println("before while (context.nextKeyValue())");
-		// group the delays by month, day, hour
-        while (context.nextKeyValue()) {
-			String monthDayHour = context.getCurrentKey().toString();
-			System.out.printf("monthDayHour: %s", monthDayHour);
-
-			if (monthDayHour.charAt(0) == 'M') {
-				monthDelays.put(Double.parseDouble(context.getCurrentValue().toString()), monthDayHour);
-			} else if (monthDayHour.charAt(0) == 'D') {
-				dayDelays.put(Double.parseDouble(context.getCurrentValue().toString()), monthDayHour);
-			} else {
-				hourDelays.put(Double.parseDouble(context.getCurrentValue().toString()), monthDayHour);
-			}
-        }
-		*/
 		System.out.println("after while (context.nextKeyValue())");
 
 		// TODO: LINE 63 RETURNS NULL FOR SOME REASON???
@@ -100,4 +81,5 @@ public class DelayReducer extends Reducer<Text, Text, Text, Text> {
 					new Text(String.valueOf(hourDelays.lastKey())));
 		}
     }
+	*/
 }
