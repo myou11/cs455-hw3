@@ -23,6 +23,10 @@ My jobs are designed with the goal of reducing network traffic, therefore, I hav
 with four jobs. There are further improvements I could incorporate into this project to reduce
 the number of jobs, such as the use of Distributed Cache for tying in related data from multiple files.
 
+For question 7, I thought it would be a cool idea to see if the airline traffic to a particular state increased during different months of the year. I wrote a MapReduce job to find the traffic to the top 100 airports for each month. I then parsed this data with python and added it to the airports.csv file given. This new file with the state and counts of traffic is mapped using (Plot.ly)[https://plot.ly/feed/].
+
+A timelapse of the traffic for these 12 months can be seen (here)[http://www.cs.colostate.edu/~myou/cs455/mapGif].
+
 ## File Descriptions (by grouping):
 ### **GetInput**
   This is the core of my MapReduce jobs because it collects and prepares the input for the subsequent jobs.
