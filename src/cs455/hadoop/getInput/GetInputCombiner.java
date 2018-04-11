@@ -46,12 +46,33 @@ public class GetInputCombiner extends Reducer<Text, Text, Text, Text> {
 		}
 
 		// Same functionality as in Reducer
-		else if (question.equals("q3") || question.equals("q6")) {
+		else if (question.equals("q3")) {
+
 			long count = 0;
 			for (Text val : values) {
 				count += Long.parseLong(val.toString());
 			}
 			context.write(key, new Text(String.valueOf(count)));
+		}
+
+		else if (question.equals("q6")) {
+			long count = 0;
+
+			for (Text val : values) {
+				String[] countOrCity = val.toString().split("_");
+				if (countOrCity.length == 1) {
+					// if we encounter the city, just write it along to the Reducer
+					context.write(key, val);
+				} else { // countOrCity has 2 elements which means its a count b/c we attached a dummy x to the counts
+					count += Long.parseLong(countOrCity[0]);
+				}
+			}
+
+			// Since, this is the combiner, we have reappend our dummy value so the reducer
+			// can parse it and check if it is a city or count value
+			String count_x = String.format("%d_x", count);
+
+			context.write(key, new Text(count_x));
 		}
 
 		// Only this question's Combiner functionality is different from its Reducer counterpart

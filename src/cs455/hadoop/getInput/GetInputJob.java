@@ -10,9 +10,11 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 public class GetInputJob {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws URISyntaxException {
         try {
             Configuration conf = new Configuration();
             // Give the MapRed job a name. You'll see this name in the Yarn webapp.
@@ -46,12 +48,17 @@ public class GetInputJob {
             //FileInputFormat.addInputPath(getInputJob, new Path(args[0]));
 			MultipleInputs.addInputPath(getInputJob, new Path(args[0]), TextInputFormat.class, GetInputMapper.class);
 			MultipleInputs.addInputPath(getInputJob, new Path(args[1]), TextInputFormat.class, GetPlaneDataMapper.class);
+			MultipleInputs.addInputPath(getInputJob, new Path(args[2]), TextInputFormat.class, GetAirportStateMapper.class);
             // path to output in HDFS
-            FileOutputFormat.setOutputPath(getInputJob, new Path(args[2]));
+            FileOutputFormat.setOutputPath(getInputJob, new Path(args[3]));
             // Block until the job is completed.
             if (getInputJob.waitForCompletion(true)) {
                 Job delayJob = Job.getInstance(conf, "Best/worst time to fly to minimize/maximize delays");
                 delayJob.setJarByClass(GetInputJob.class);
+
+                // Add the airports data to the distributed cache
+                // airports data has the city for each airport, which we will use to count the weather delays for each city
+                //delayJob.addCacheFile(new URI("/data/supplementary/airports.csv"));
 
                 delayJob.setMapperClass(DelayMapper.class);
 
@@ -62,8 +69,8 @@ public class GetInputJob {
                 delayJob.setOutputKeyClass(Text.class);
                 delayJob.setOutputValueClass(Text.class);
 
-                FileInputFormat.addInputPath(delayJob, new Path(args[3]));
-                FileOutputFormat.setOutputPath(delayJob, new Path(args[4]));
+                FileInputFormat.addInputPath(delayJob, new Path(args[4]));
+                FileOutputFormat.setOutputPath(delayJob, new Path(args[5]));
 
 				if (delayJob.waitForCompletion(true)) {
 					Job busiestAirportsJob = Job.getInstance(conf, "Top 10 Busiest Airports");
@@ -83,8 +90,8 @@ public class GetInputJob {
 					busiestAirportsJob.setOutputKeyClass(Text.class);
 					busiestAirportsJob.setOutputValueClass(Text.class);
 
-					FileInputFormat.addInputPath(busiestAirportsJob, new Path(args[5]));
-					FileOutputFormat.setOutputPath(busiestAirportsJob, new Path(args[6]));
+					FileInputFormat.addInputPath(busiestAirportsJob, new Path(args[6]));
+					FileOutputFormat.setOutputPath(busiestAirportsJob, new Path(args[7]));
 
 					if (busiestAirportsJob.waitForCompletion(true)) {
 						Job topTenAirportsPerMonthJob = Job.getInstance(conf, "Best/worst time to fly to minimize/maximize delays");
@@ -101,8 +108,8 @@ public class GetInputJob {
 						topTenAirportsPerMonthJob.setOutputKeyClass(Text.class);
 						topTenAirportsPerMonthJob.setOutputValueClass(Text.class);
 
-						FileInputFormat.addInputPath(topTenAirportsPerMonthJob, new Path(args[7]));
-						FileOutputFormat.setOutputPath(topTenAirportsPerMonthJob, new Path(args[8]));
+						FileInputFormat.addInputPath(topTenAirportsPerMonthJob, new Path(args[8]));
+						FileOutputFormat.setOutputPath(topTenAirportsPerMonthJob, new Path(args[9]));
 						
 						System.exit(topTenAirportsPerMonthJob.waitForCompletion(true) ? 0 : 1);
 					}

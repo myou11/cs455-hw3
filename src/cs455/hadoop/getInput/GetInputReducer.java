@@ -52,12 +52,41 @@ public class GetInputReducer extends Reducer<Text, Text, Text, Text> {
 			context.write(key, new Text(delay_numDelays));
 		}
 
-		if (question.equals("q3") || question.equals("q6")) {
+		if (question.equals("q3")) {
 			long count = 0;
 			for (Text val : values) {
 				count += Long.parseLong(val.toString());
 			}
-			context.write(key, new Text(String.valueOf(count)));
+
+            context.write(key, new Text(String.valueOf(count)));
+		}
+
+		if (question.equals("q6")) {
+			String city = null;
+			long count = 0;
+
+			for (Text val : values) {
+				String[] countOrCity = val.toString().split("_");
+				if (countOrCity.length == 1) {
+					city = val.toString();
+				} else { // countOrCity has 2 elements which means its a count b/c we attached a dummy x to the counts
+					count += Long.parseLong(countOrCity[0]);
+				}
+			}
+
+			// There is a chance that there is no corresponding city to this airport.
+			// In this case, splitting the value will never equal 1 because a city was
+			// never sent. Therefore, we toss out the count for this airport by not
+			// writing it to the Reducers since we cannot connect it back to a city.
+			if (city != null) {
+				// replace the airport with its designated city
+				String question_city = "q6:" + city;
+
+				// No need to append the dummy x to the end of the count anymore.
+				// Send just the count as the value so TopTenAirportsMapper doesn't
+				// have to parse out the extra dummy x.
+				context.write(new Text(question_city), new Text(String.valueOf(count)));
+			}
 		}
 
 		if (question.equals("q7")) {

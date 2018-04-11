@@ -50,7 +50,7 @@ public class BusiestAirportsPerMonthReducer extends Reducer<Text, Text, Text, Te
 
 	@Override
 	protected void cleanup(Context context) throws IOException, InterruptedException {
-		context.write(new Text("Month"), new Text(this.month));
+		context.write(new Text("month,airport,count"), new Text());
 
 		int counter = 0;
 		for (Map.Entry<Long, String> entry : airportCounts.entrySet()) {
@@ -63,7 +63,10 @@ public class BusiestAirportsPerMonthReducer extends Reducer<Text, Text, Text, Te
 			//String airport_count = String.format("%s_%d", airport, count);
 			
 			//context.write(new Text(this.month), new Text(formattedAirportCount));
-			context.write(new Text(airport), new Text(String.valueOf(count)));
+			//context.write(new Text(airport), new Text(String.valueOf(count)));
+
+			String month_airport_count_csvFormat = String.format("%s,%s,%d", this.month, airport, count);
+			context.write(new Text(month_airport_count_csvFormat), new Text());
 
 			counter++;
 		}

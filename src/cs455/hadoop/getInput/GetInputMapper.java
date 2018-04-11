@@ -50,35 +50,50 @@ public class GetInputMapper extends Mapper<LongWritable, Text, Text, Text> {
         }
 
 		// Q3 - busiest airports
-		String origin = dataRow[16];
-		String dest = dataRow[17];
-		
+
 		int year = Integer.parseInt(dataRow[0]);
 		int before1998 = (year < 1998) ? 1 : 0;
 
+		// We give Q3 as a normal 1
 		Text one = new Text("1");
 
+		// Tack an x onto the end b/c this is how we will differentiate the <question_airport, count_x>
+		// from this mapper and the other mapper which generates <question_airport, city>.
+		// When one_x gets split, if its length is 2, we know it came from this mapper.
+		// Otherwise, the length will be 1 and we will know the value is a city from GetAirportStateMapper.
+		Text one_x = new Text("1_x");
+
 		// if the origin is available
-		if (!origin.equals("NA")) {
+		if (!dataRow[16].equals("NA")) {
+			String origin = dataRow[16];
 			String q3OriginBefore1998= String.format("q3:%s:%d", origin, before1998);
 			context.write(new Text(q3OriginBefore1998), one);
 
 			// Q6 - weather delay
-			if (!dataRow[25].equals("NA") /*|| !dataRow[26].equals("NA")*/) {
-			    String q6Origin = "q6:" + origin;
-			    context.write(new Text(q6Origin), one);
+			if (!dataRow[25].equals("NA")) {
+				int weatherDelay = Integer.parseInt(dataRow[25]);
+				// only count the weather delay if it is greater than 0, otherwise it is not a delay
+				if (weatherDelay > 0) {
+					String q6Origin = "q6:" + origin;
+					context.write(new Text(q6Origin), one_x);
+				}
             }
 		}
 
 		// if the dest is available
-		if (!dest.equals("NA")) {
+		if (!dataRow[17].equals("NA")) {
+		    String dest = dataRow[17];
 			String q3DestBefore1998 = String.format("q3:%s:%d", dest, before1998);
 			context.write(new Text(q3DestBefore1998), one);
 
 			// Q6 - weather delay
-			if (!dataRow[25].equals("NA") /*|| !dataRow[26].equals("NA")*/) {
-			    String q6Dest = "q6:" + dest;
-			    context.write(new Text(q6Dest), one);
+			if (!dataRow[25].equals("NA")) {
+				// only count the weather delay if it is greater than 0, otherwise it is not a delay
+				int weatherDelay = Integer.parseInt(dataRow[25]);
+				if (weatherDelay > 0) {
+					String q6Dest = "q6:" + dest;
+					context.write(new Text(q6Dest), one_x);
+				}
             }
 		}
 
