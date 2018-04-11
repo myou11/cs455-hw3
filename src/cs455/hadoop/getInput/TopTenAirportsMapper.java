@@ -10,7 +10,7 @@ import java.io.IOException;
 /**
  * Mapper: Reads line by line, split them into words. Emit <word, 1> pairs.
  */
-public class SortBusiestAirportsMapper extends Mapper<LongWritable, Text, LongWritable, Text> {
+public class TopTenAirportsMapper extends Mapper<LongWritable, Text, Text, Text> {
 
     @Override
     protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
@@ -18,14 +18,11 @@ public class SortBusiestAirportsMapper extends Mapper<LongWritable, Text, LongWr
         // parse the output from the previous job; key-value separated by whitespace; regex to split on whitespace
         String[] dataRow = value.toString().split("\\s+");
 
-		String[] question_airport = dataRow[0].split(":");
-		String question = question_airport[0];
+		// key
+		String question_category = dataRow[0];
+		// value
+		String count = dataRow[1];
 
-		if (question.equals("q3")) {
-			String airport = question_airport[1];
-			long count = Long.parseLong(dataRow[1]);
-
-			context.write(new LongWritable(count), new Text(airport));
-		}
+		context.write(new Text(question_category), new Text(count));
     }
 }

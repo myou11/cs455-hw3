@@ -10,11 +10,9 @@ public class GetInputMapper extends Mapper<LongWritable, Text, Text, Text> {
     protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
         String[] dataRow = value.toString().split(",");
 
-        if (dataRow[0].equals("Year")) {
+        if (dataRow.length < 29 || dataRow[0].equals("Year")) {
             return;
         }
-
-		System.out.println("CAN I PLEASE GET PRINTED??");
 
 		// Q1 / Q2 - best/worst month/day/hour to minimize/maximize delays
         // only consider parsing the month, day, or time if the delay is available
@@ -54,12 +52,16 @@ public class GetInputMapper extends Mapper<LongWritable, Text, Text, Text> {
 		// Q3 - busiest airports
 		String origin = dataRow[16];
 		String dest = dataRow[17];
+		
+		int year = Integer.parseInt(dataRow[0]);
+		int before1998 = (year < 1998) ? 1 : 0;
+
 		Text one = new Text("1");
 
 		// if the origin is available
 		if (!origin.equals("NA")) {
-			String q3Origin = "q3:" + origin;
-			context.write(new Text(q3Origin), one);
+			String q3OriginBefore1998= String.format("q3:%s:%d", origin, before1998);
+			context.write(new Text(q3OriginBefore1998), one);
 
 			// Q6 - weather delay
 			if (!dataRow[25].equals("NA") /*|| !dataRow[26].equals("NA")*/) {
@@ -70,8 +72,8 @@ public class GetInputMapper extends Mapper<LongWritable, Text, Text, Text> {
 
 		// if the dest is available
 		if (!dest.equals("NA")) {
-			String q3Dest = "q3:" + dest;
-			context.write(new Text(q3Dest), one);
+			String q3DestBefore1998 = String.format("q3:%s:%d", dest, before1998);
+			context.write(new Text(q3DestBefore1998), one);
 
 			// Q6 - weather delay
 			if (!dataRow[25].equals("NA") /*|| !dataRow[26].equals("NA")*/) {
@@ -82,12 +84,51 @@ public class GetInputMapper extends Mapper<LongWritable, Text, Text, Text> {
 
 		// Q4 - carrier delays
         if (!dataRow[8].equals("NA")) {
-		    String carrier = "q4:" + dataRow[8];
+		    String question_carrier = "q4:" + dataRow[8];
 
+			// Need to make sure delay is available and that there actually was a delay
 		    if (!dataRow[24].equals("NA")) {
-		        String delay_numDelays = dataRow[24] + "_1";
-		        context.write(new Text(carrier), new Text(delay_numDelays));
+				// safe to parse an int after we check that it is available
+				int delay = Integer.parseInt(dataRow[24]);
+
+				// Don't want to calculate delays of 0 or less into the avg carrier delays
+				if (delay > 0) {
+					String delay_numDelays = dataRow[24] + "_1";
+					context.write(new Text(question_carrier), new Text(delay_numDelays));
+				}
             }
         }
+
+		///*
+		// Q5 - Do older planes cause more delays?
+		if (!dataRow[10].equals("NA") && !dataRow[10].isEmpty()) {
+			String question_tailNum = String.format("q5:%s", dataRow[10]);
+			
+			// TODO: Use MultipleInputs Hadoop to fetch data from plane-data.csv
+			// Designate another input using MultipleInput from the Hadoop Library
+			// Have a different mapper perform the mapping of the plane-data
+
+			// Only consider arrival delay for on-time performance
+			if (!dataRow[0].equals("NA") && !dataRow[14].equals("NA")) {
+				String year_arrDelay_count = String.format("%s_%s_1", dataRow[0], dataRow[14]);
+				context.write(new Text(question_tailNum), new Text(year_arrDelay_count));
+			}
+		}
+		//*/
+
+		// Q7 - What are the busiest airports for each month?
+		if (!dataRow[1].equals("NA")) {
+			String question_month = "q7:" + dataRow[1];
+
+			if (!dataRow[16].equals("NA")) {
+				String origin_count = dataRow[16] + "_1";
+				context.write(new Text(question_month), new Text(origin_count));
+			}
+
+			if (!dataRow[17].equals("NA")) {
+				String dest_count = dataRow[17] + "_1";
+				context.write(new Text(question_month), new Text(dest_count));
+			}
+		}
     }
 }

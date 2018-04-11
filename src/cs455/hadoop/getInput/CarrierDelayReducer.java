@@ -3,10 +3,11 @@ package cs455.hadoop.getInput;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
+
+import java.io.IOException;
 
 /**
  * Reducer: Input to the reducer is the output from the mapper.
